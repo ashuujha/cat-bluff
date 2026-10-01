@@ -773,7 +773,7 @@ select:focus-visible,
   max-width: 440px;
   padding: 12px 18px;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 2px solid var(--yellow);
   border-radius: 12px;
   font-size: 19px;
   box-shadow: 0 3px 0 #130e1e33;
@@ -787,6 +787,14 @@ select:focus-visible,
 .claim-bubble strong {
   font-weight: 600;
   letter-spacing: -0.02em;
+}
+.claim-bubble > span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.choose-cards-jump {
+  margin: 4px auto 12px;
 }
 .bluff-stamp {
   display: block;
@@ -2109,11 +2117,17 @@ select:focus-visible,
 }
 .selection-review {
   grid-area: selection;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   min-width: 0;
-  height: 46px;
+  min-height: 46px;
+}
+.selection-label {
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
 }
 .classic-playbar .selected-tray {
   display: flex;
@@ -2198,9 +2212,18 @@ select:focus-visible,
   }
   .classic-playbar .selection-review {
     width: 100%;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "label clear" "tray tray";
+    gap: 4px 8px;
+  }
+  .classic-playbar .selection-label {
+    grid-area: label;
+  }
+  .classic-playbar .clear-selection {
+    grid-area: clear;
   }
   .classic-playbar .selected-tray {
-    flex: 1;
+    grid-area: tray;
   }
   .classic-playbar .selected-card-chip {
     font-size: 12px;

@@ -214,7 +214,11 @@ export function ClassicGame({
     engine.current = applyClassic(engine.current, seat, action);
     const next = classicView(engine.current);
     setPractice(next);
-    setRecap(practiceRecap(before, next, seat, action.kind));
+    setRecap(
+      seat === 0 && action.kind === "play"
+        ? `You put down ${action.cards.map((id) => `${DECK[id].rank}${DECK[id].suit}`).join(" · ")} and claimed ${declaration(action.cards.length, before.rank)}. The bots see your claim, not your cards.`
+        : practiceRecap(before, next, seat, action.kind),
+    );
     setReviewing(
       next.latest?.outcome !== "pending" &&
         next.latest !== undefined &&
@@ -361,10 +365,10 @@ export function ClassicGame({
     } else if (playing) {
       headline = `Your turn. Claim ${RANK_NAMES[view.rank]}s.`;
       hint =
-        "Select any cards. They go face down. Truth or bluff: your choice.";
+        "Choose the actual cards from your hand below. The required rank is fixed; you decide whether your claim is true.";
     } else if (responding) {
-      headline = "Trust… or call BLUFF?";
-      hint = `${name(view.latest!.actor)} claims ${declaration(view.latest!.quantity, view.latest!.rank)}. ${view.pileSize} cards are at stake.`;
+      headline = `${name(view.latest!.actor)} says ${declaration(view.latest!.quantity, view.latest!.rank)}.`;
+      hint = `The actual cards are hidden. Trust that claim or call BLUFF; ${view.pileSize} cards are at stake.`;
     } else if (view.phase === "reveal") {
       headline = opening
         ? "Time to show those cats."
@@ -764,9 +768,9 @@ export function ClassicGame({
                     {practiceReview
                       ? "The pile and hand counts are updated. You can also revisit this result in the activity feed."
                       : view.phase === "play" && playing
-                        ? `Required rank: ${RANK_NAMES[view.rank]}s. Select any cards, even different ranks. Then use Play face down above your hand.`
+                        ? `Required rank: ${RANK_NAMES[view.rank]}s. Tap one or more cards in your hand. The table will hear only how many ${RANK_NAMES[view.rank]}s you claim.`
                         : view.phase === "respond" && responding
-                          ? "Use Trust or BLUFF at the table. If they lied, they take the pile. If they told the truth, you take it."
+                          ? `${name(view.latest!.actor)} claims ${declaration(view.latest!.quantity, view.latest!.rank)}. Their real cards stay hidden unless you call BLUFF. If they lied, they take the pile; if they told the truth, you take it.`
                           : view.phase === "reveal"
                             ? "Only this play is revealed. All other hidden cards stay hidden."
                             : "Watch the claim, then let the next cat act. Reactions are random, never evidence."}
@@ -859,12 +863,34 @@ export function ClassicGame({
               <p>{hint}</p>
               {view.latest && view.phase !== "play" && (
                 <div className="claim-bubble">
-                  <small>LATEST CLAIM</small>
+                  <small>{view.latest.actor === seat ? "YOUR CLAIM" : "WHAT THEY CLAIMED"}</small>
                   <strong>
-                    {name(view.latest.actor)} played{" "}
-                    {declaration(view.latest.quantity, view.latest.rank)}
+                    {name(view.latest.actor)} says: “I played{" "}
+                    {declaration(view.latest.quantity, view.latest.rank)}.”
                   </strong>
+                  <span>
+                    {view.latest.revealed
+                      ? "A challenge revealed this turn’s actual cards below."
+                      : "The actual cards are face-down. Only a BLUFF call reveals them."}
+                  </span>
                 </div>
+              )}
+              {playing && !online && (
+                <button
+                  className="button secondary choose-cards-jump"
+                  onClick={() =>
+                    document.getElementById("hand-title")?.scrollIntoView({
+                      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
+                        ? "instant"
+                        : "smooth",
+                      block: "start",
+                    })
+                  }
+                >
+                  {selected.length
+                    ? `Review ${selected.length} selected ${selected.length === 1 ? "card" : "cards"} ↓`
+                    : "Choose the cards you’ll play ↓"}
+                </button>
               )}
               {view.latest?.challenger !== undefined &&
                 (view.phase === "reveal" || view.phase === "transfer") && (
@@ -1036,15 +1062,16 @@ export function ClassicGame({
                   <div className="selection-summary" role="status">
                     <strong>
                       {selected.length
-                        ? `${selected.length} selected · Claim: ${declaration(selected.length, view.rank)}`
-                        : "Choose one or more cards"}
+                        ? `You will claim: ${declaration(selected.length, view.rank)}`
+                        : `Claim ${RANK_NAMES[view.rank]}s this turn`}
                     </strong>
                     <span>
-                      Required claim: {RANK_NAMES[view.rank]}s. You choose the
-                      actual cards.
+                      The table sets the rank. You choose the actual cards and
+                      how many to put down.
                     </span>
                   </div>
                   <div className="selection-review">
+                    <span className="selection-label">Actually playing (private)</span>
                     <div
                       className="selected-tray"
                       aria-label="Your selected cards, kept private"
@@ -1084,11 +1111,18 @@ export function ClassicGame({
                   <button
                     className="button primary submit-selection"
                     disabled={!selected.length || busy || inspectMode}
+                    aria-label={
+                      selected.length
+                        ? `Place ${selected.length} cards face-down and claim ${declaration(selected.length, view.rank)}`
+                        : "Select cards from your hand first"
+                    }
                     onClick={() =>
                       void act({ kind: "play", cards: [...selected] })
                     }
                   >
-                    Play {selected.length || ""} face down ↗
+                    {selected.length
+                      ? `Place face-down · claim ${declaration(selected.length, view.rank)} ↗`
+                      : "Choose cards first"}
                   </button>
                 </div>
               )}

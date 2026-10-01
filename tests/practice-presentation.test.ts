@@ -29,6 +29,20 @@ describe("practice narration", () => {
     assert.match(text, /claimed 1 Ace/);
     assert.doesNotMatch(text, /King/);
   });
+  it("shows a bot's declared card without disclosing its actual face-down card", () => {
+    const start = newClassicState(2, 1, deck);
+    const playerPlayed = applyClassic(start, 0, { kind: "play", cards: [0] });
+    const botTurn = applyClassic(playerPlayed, 1, { kind: "pass" });
+    const bluff = applyClassic(botTurn, 1, { kind: "play", cards: [1] });
+    const honest = applyClassic(botTurn, 1, { kind: "play", cards: [5] });
+    const claim = practiceRecap(classicView(botTurn), classicView(bluff), 1, "play");
+    assert.equal(
+      claim,
+      practiceRecap(classicView(botTurn), classicView(honest), 1, "play"),
+    );
+    assert.match(claim, /Miso played 1 face-down and claimed 1 Two/);
+    assert.equal(classicView(bluff).latest!.revealed, undefined);
+  });
   it("explains the correct full-pile penalty for both challenge outcomes", () => {
     for (const [card, expectedReceiver, outcome] of [
       [0, "Miso", "true"],
